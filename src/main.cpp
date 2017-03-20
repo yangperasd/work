@@ -61,7 +61,9 @@ bool replaceSpace(vector<char>& source,int maxLen)
 
 int main()
 {
-    BiTreeNodeBase a;
-    cout<<static_cast<void*>(a.m_pLeft)<<endl
-        <<static_cast<void*>(a.m_pRight)<<endl;
+   BiTree<> tree;
+   vector<int> preOrder{1,2,4,7,3,5,6,8};
+   vector<int> midOrder{4,7,2,1,5,3,8,6};
+   reBuildFromMidFirstOrder(tree,preOrder,midOrder);
+   tree.traverse(0);
 }

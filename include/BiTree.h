@@ -12,7 +12,10 @@
 #include <utility>
 #include <tuple>
 #include <queue>
-using std::endl;using std::cout;using std::stack;using std::pair;using std::tie;using std::queue;
+#include <iterator>
+#include <algorithm>
+#include <stdexcept>
+using std::endl;using std::cout;using std::stack;using std::pair;using std::tie;using std::queue;using std::find;using std::distance;using std::runtime_error;
 struct BiTreeNodeBase
 {/*{{{*/
     //ctor 
@@ -26,7 +29,8 @@ template <typename T>
 struct BiTreeNode: public BiTreeNodeBase
 {
     //some type rename 
-    using pointer=BiTreeNode*;
+    using pointer=BiTreeNode<T> *;
+    using Base=BiTreeNodeBase;
     using selfType=BiTreeNode<T>;
     //ctor 
     BiTreeNode(T const& value):m_data(value),BiTreeNodeBase() {}
@@ -50,9 +54,16 @@ struct BiTreeNode: public BiTreeNodeBase
         this->m_pRight=pNewNode;
         return pNewNode;
     }/*}}}*/
-    pointer deleteLeft()
+    void freeNode(Base* p)
     {
-        return this;
+        if(p)
+        {
+            if(p->m_pLeft)
+                freeNode(p->m_pLeft);
+            if(p->m_pRight)
+                freeNode(p->m_pRight);
+            delete static_cast<pointer>(p);
+        }
     }
     
     void visit()
@@ -71,7 +82,10 @@ class BiTree
         using iterator=Node_t *;
     public:
         BiTree():m_root(nullptr),m_len(0) {};
-        
+        ~BiTree()
+        { 
+             m_root->freeNode(m_root);
+        }
         void traverse(int mode=0)
         { /*{{{*/
             //0 for pre-order,1 for mid-order,2 for post-order 
@@ -195,19 +209,65 @@ class BiTree
             {
                 if(mode==0)
                     pNode->visit();
-                traverseRecursionImpl(pNode->m_pLeft,mode);
+                traverseRecursionImpl(static_cast<iterator>(pNode->m_pLeft)
+                                        ,mode);
                 if(mode==1)
                     pNode->visit();
-                traverseRecursionImpl(pNode->m_pRight,mode);
+                traverseRecursionImpl(static_cast<iterator>(pNode->m_pRight),
+                                        mode);
                 if(mode==2)
                     pNode->visit();
                 return;
             }
         }/*}}}*/
-        
+         
     public:
         //data member
         Node_t*     m_root;
         size_t      m_len;
 };
+template<typename T,typename Iterator>
+BiTreeNode<T>* 
+reBuildFromMidFirstOrderImpl(Iterator preOrderBeg,Iterator preOrderEnd,
+                                  Iterator midOrderBeg,Iterator midOrderEnd)
+{
+    if(preOrderBeg==preOrderEnd||midOrderBeg==midOrderEnd)
+    {
+        return nullptr;
+    }
+    using Node_t=BiTreeNode<T>;
+    //find root in mid-order 
+    auto pos=find(midOrderBeg,midOrderEnd,*preOrderBeg);
+    //do not find root in mid-order,ERROR!
+    if(pos==midOrderEnd)
+    {
+        throw runtime_error("do not find root in mid-order");
+        return nullptr;
+
+    }
+    //build root 
+    Node_t* root=new Node_t(*preOrderBeg);
+    size_t leftLen=distance(midOrderBeg,pos);
+    //build left child 
+    if(pos!=midOrderBeg)
+    {
+        root->m_pLeft=reBuildFromMidFirstOrderImpl<T>(preOrderBeg+1,preOrderBeg+leftLen+1,
+                                                  midOrderBeg,pos);
+    }
+    //build right child
+    if(pos!=midOrderEnd)
+    {
+        root->m_pRight=reBuildFromMidFirstOrderImpl<T>(preOrderBeg+leftLen+1,preOrderEnd,
+                                                   pos+1,midOrderEnd);
+    }
+    return root;
+}
+template<typename T,typename Container>
+void reBuildFromMidFirstOrder(BiTree<T>& tree,Container const& preOrder,
+                             Container const& midOrder)
+{
+    if(!tree.m_root)
+        tree.m_root=reBuildFromMidFirstOrderImpl<T>(preOrder.begin(),preOrder.end(),
+                                                midOrder.begin(),midOrder.end());
+}
 #endif
