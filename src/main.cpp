@@ -7,7 +7,9 @@
 
 #include<iostream>
 #include <vector>
+#include <algorithm>
 #include "BiTree.h"
+#include "sort.h"
 using namespace std;
 template<typename T>
 bool matrixFind(vector<vector<T>> const& matrix,
@@ -59,11 +61,30 @@ bool replaceSpace(vector<char>& source,int maxLen)
     return true;
 }/*}}}*/
 
+template<typename It>
+It rotateMin(It beg, It end)
+{
+    if(beg==end)
+        return beg;
+    --end;
+    while(beg!=end)
+    {
+        size_t len=distance(beg,end);
+        if(len==1)
+            break;
+        len/=2;
+        if(*(beg+len)==*beg&&*beg==*end)
+            return beg;
+        if(*(beg+len)>=*beg)
+            beg+=len;
+        else 
+            end-=len;
+    }
+    return end;
+}
 int main()
 {
-   BiTree<> tree;
-   vector<int> preOrder{1,2,4,7,3,5,6,8};
-   vector<int> midOrder{4,7,2,1,5,3,8,6};
-   reBuildFromMidFirstOrder(tree,preOrder,midOrder);
-   tree.traverse(0);
+    vector<int> vec={3,4,5,1,2};
+    auto iter=rotateMin(vec.begin(),vec.end());
+    cout<<*iter<<endl;
 }
